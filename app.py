@@ -5,32 +5,12 @@ from resources.subTask import blp as SubTaskBlueprint
 from resources.user import blp as UserBlueprint
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
-
-# from opentelemetry.instrumentation.flask import FlaskInstrumentor
-# from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-
-
-# from opentelemetry import trace
-# from opentelemetry.sdk.resources import Resource
-# from opentelemetry.sdk.trace import TracerProvider
-# from opentelemetry.sdk.trace.export import BatchSpanProcessor
-# from opentelemetry.sdk.trace.export import ConsoleSpanExporter
-
-# provider = TracerProvider()
-# processor = BatchSpanProcessor(ConsoleSpanExporter())
-# provider.add_span_processor(processor)
-# trace.set_tracer_provider(provider)
-# tracer = trace.get_tracer(__name__)
+from datetime import timedelta
 
 from db import db
 import os
 import models
 from blocklist import BLOCKLIST
-
-
-# app = Flask(__name__)
-
-# SQLAlchemyInstrumentor().instrument(engine=db.engine)
 
 
 def create_app():
@@ -52,13 +32,15 @@ def create_app():
     # "SQLALCHEMY_DATABASE_URI"
     # ] = "postgresql://zoro:zoro113@localhost/TaskManagement"
     # app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
     db.init_app(app)
-    # FlaskInstrumentor().instrument_app(app)
 
     migrate = Migrate(app, db)
 
     # api = Api(app)
     app.config["JWT_SECRET_KEY"] = "244628952963955921591023472340882159530"
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
     jwt = JWTManager(app)
 
     @jwt.token_in_blocklist_loader
@@ -102,9 +84,9 @@ def create_app():
             401,
         )
 
-    @app.before_first_request
-    def createTables():
-        db.create_all()
+    # @app._got_first_request
+    # def createTables():
+    #     db.create_all()
 
     app.register_blueprint(TaskBlueprint)
     app.register_blueprint(SubTaskBlueprint)
