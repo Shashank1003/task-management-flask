@@ -8,8 +8,10 @@ from flask_jwt_extended import jwt_required
 from models import TaskModel
 from schemas import TaskSchema
 from db import db
+
 from opentelemetry import trace
-from autologging import traced
+
+# from autologging import traced
 from pprint import pprint
 import inspect
 
@@ -22,28 +24,28 @@ class TaskList(MethodView):
     @jwt_required()
     @blp.response(200, TaskSchema(many=True))
     def get(self):
-        # with tracer.start_as_current_span("get_all_tasks") as tasksSpan:
-        res = TaskModel.query.all()
-        # print("taskmodel", dir(res))
-        # print(pprint(inspect.getmembers(TaskModel)))
-        # tasksSpan.set_attribute("tasks.value", res)
-        return res
+        with tracer.start_as_current_span("get_all_tasks") as tasksSpan:
+            res = TaskModel.query.all()
+            # print("taskmodel", dir(res))
+            # print(pprint(inspect.getmembers(TaskModel)))
+            tasksSpan.set_attribute("tasks.value", "Working")
+            return res
 
     @jwt_required()
     @blp.arguments(TaskSchema)
     @blp.response(201, TaskSchema)
     def post(self, task_data):
-        with tracer.start_as_current_span("create_task") as createTaskSpan:
-            task = TaskModel(**task_data)
-            try:
-                db.session.add(task)
-                db.session.commit()
-            except SQLAlchemyError as e:
-                print("error", e)
-                abort(500, message=str(e))
+        # with tracer.start_as_current_span("create_task") as createTaskSpan:
+        task = TaskModel(**task_data)
+        try:
+            db.session.add(task)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            print("error", e)
+            abort(500, message=str(e))
 
-            createTaskSpan.set_attribute("create_task.value", task)
-            return task
+        # createTaskSpan.set_attribute("create_task.value", task)
+        return task
 
 
 @blp.route("/task/<string:task_id>")
